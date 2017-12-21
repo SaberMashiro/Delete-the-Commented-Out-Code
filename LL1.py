@@ -32,34 +32,47 @@ def SetFirst(first):
         result = []
         for value in firstList:
             counter = 0
-            if value[counter].islower():
+            if not value[counter].isupper():
                 result.append(value[counter])#第一个是终结符
             else:#第一个是非终结符
-                while(''.join(grammer[value[counter]]).find('e') >= 0):#如果该非终结符中有空串
+                while(counter and ''.join(grammer[value[counter]]).find('e') >= 0):#如果该非终结符中有空串
                     if not result.count('e'):
                         result.append('e')
-                    result+=[n[0] for n in grammer[key] if n[0].islower() and n[0]  is not 'e']
+                    tempvalue = [n[0] for n in grammer[key] if n[0] is not 'e'][0]
+                    if n[0].isupper():
+                        result+=[n[0] for n in grammer[tempvalue] if not n[0].isupper() and n[0] is not 'e']
+                    else:
+                        result+=tempvalue
                     counter += 1
+                #该非终结符没空串或最后一个
+                tempvalue = [n[0] for n in grammer[key] if  n[0] is not 'e'][0]
+                if tempvalue.isupper():
+                    tempvalue2 = [n[0] for n in grammer[tempvalue] if n[0] is not 'e'][0]
+                    if tempvalue2.isupper():
+                        result+=[n[0] for n in grammer[tempvalue2] if n[0] is not 'e']
+                    else:
+                        result+=[n[0] for n in grammer[tempvalue] if not n[0].isupper() and n[0] is not 'e']
+                else:
+                    result+=tempvalue
         result = list(set(result))
         first[key] = result
 
-
 def SetFollow(follow):
     flag = 1
-    for key in ['S'] + [x for x in follow.keys() if x is not 'S']:#对每个元素  
+    for key in follow.keys():#对每个元素  
         result = []
         if flag:
             result+=['#']
             flag = 0
-        for word in ['S'] + [x for x in follow.keys() if x is not 'S']:#按顺序遍历 
+        for word in follow.keys():#按顺序遍历 
             for value in grammer[word]:#遍历value列表
                 length = value.__len__()
                 position = value.find(key) + 1
                 if position and position < length:
-                    if value[position].islower():
+                    if not value[position].isupper():
                         result.append(value[position])#如果找到的位置后面是终结符
                     else:
-                        while(position is True and ''.join(first[value[position]]).find('e') >= 0):#如果该非终结符中有空串
+                        while(position and ''.join(first[value[position]]).find('e') >= 0):#如果该非终结符中有空串
                             temp = copy.deepcopy(first)[value[position]]#first集
                             if temp.count('e'):
                                 temp.remove('e')
@@ -69,6 +82,7 @@ def SetFollow(follow):
                                 position += 1
                             else:
                                 position = -1
+                                break
                         temp = copy.deepcopy(first)[value[position]]#最后一个或者没有空串
                         if temp.count('e'):
                             temp.remove('e')
@@ -87,17 +101,19 @@ def SetSelect(select):
         result = []
         counter = 0
         value = key[1:].replace('->','')
+        length = value.__len__()
         parameter = key[counter]
-        if value[counter].islower() and value[counter] is not 'e':
+        if not value[counter].isupper() and value[counter] is not 'e':
             result.append(value[counter])
         elif value[counter] is 'e':
             result += follow[parameter]
         else:
-            while(value[counter].isupper()):
+            while(counter < length and value[counter].isupper()):
                 temp = first[value[counter]]
                 if not temp.count('e'):
                     flag = 0
                 result += temp
+                counter+=1
             if flag:
                 result += follow[parameter]
         select[key] = result
